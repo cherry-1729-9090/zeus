@@ -24,23 +24,23 @@ interface DropdownInputProps {
     disabled?: boolean;
 }
 
-const DropdownInput: React.FC<DropdownInputProps> = ({ 
-    items, 
-    value, 
-    onValueChange, 
+const DropdownInput: React.FC<DropdownInputProps> = ({
+    items,
+    value,
+    onValueChange,
     placeholder = 'Select an option',
-    disabled = false 
+    disabled = false
 }) => {
     // Find the current selected item for display
-    const selectedItem = items.find(item => item.value === value);
+    const selectedItem = items.find((item) => item.value === value);
     const displayText = selectedItem ? selectedItem.label : placeholder;
 
     // For iOS action sheet
     const showIOSPicker = () => {
         if (disabled) return;
-        
-        const options = ['Cancel', ...items.map(item => item.label)];
-        
+
+        const options = ['Cancel', ...items.map((item) => item.label)];
+
         ActionSheetIOS.showActionSheetWithOptions(
             {
                 options,
@@ -56,25 +56,32 @@ const DropdownInput: React.FC<DropdownInputProps> = ({
     return (
         <View style={styles.container}>
             {Platform.OS === 'android' && (
-                <View style={[
-                    styles.wrapper, 
-                    { backgroundColor: themeColor('secondary'), opacity: disabled ? 0.8 : 1 }
-                ]}>
+                <View
+                    style={[
+                        styles.wrapper,
+                        {
+                            backgroundColor: themeColor('secondary'),
+                            opacity: disabled ? 0.8 : 1
+                        }
+                    ]}
+                >
                     <Picker
                         selectedValue={value}
                         onValueChange={onValueChange}
                         style={{
-                            color: disabled ? themeColor('secondaryText') : themeColor('text'),
+                            color: disabled
+                                ? themeColor('secondaryText')
+                                : themeColor('text'),
                             width: '100%'
                         }}
                         dropdownIconColor={themeColor('text')}
                         enabled={!disabled}
                     >
                         {items.map((item, index) => (
-                            <Picker.Item 
-                                key={`${item.value}-${index}`} 
-                                label={item.label} 
-                                value={item.value} 
+                            <Picker.Item
+                                key={`${item.value}-${index}`}
+                                label={item.label}
+                                value={item.value}
                             />
                         ))}
                     </Picker>
@@ -86,16 +93,23 @@ const DropdownInput: React.FC<DropdownInputProps> = ({
                     onPress={showIOSPicker}
                     disabled={disabled}
                     style={[
-                        styles.wrapper, 
-                        { backgroundColor: themeColor('secondary'), opacity: disabled ? 0.8 : 1 }
+                        styles.wrapper,
+                        {
+                            backgroundColor: themeColor('secondary'),
+                            opacity: disabled ? 0.8 : 1
+                        }
                     ]}
                 >
-                    <Text style={{
-                        color: disabled ? themeColor('secondaryText') : themeColor('text'),
-                        fontFamily: 'PPNeueMontreal-Book',
-                        fontSize: 16,
-                        paddingLeft: 10
-                    }}>
+                    <Text
+                        style={{
+                            color: disabled
+                                ? themeColor('secondaryText')
+                                : themeColor('text'),
+                            fontFamily: 'PPNeueMontreal-Book',
+                            fontSize: 16,
+                            paddingLeft: 10
+                        }}
+                    >
                         {displayText}
                     </Text>
                     <View style={styles.caretContainer}>

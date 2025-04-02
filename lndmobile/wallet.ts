@@ -509,13 +509,13 @@ export const signMessage = async (
 
 /**
  * Sign a message with an on-chain address.
- * 
- * This method returns the compact signature (base64 encoded) created with 
- * the private key of the provided address. This requires the address to be 
+ *
+ * This method returns the compact signature (base64 encoded) created with
+ * the private key of the provided address. This requires the address to be
  * solely based on a public key lock (no scripts).
- * 
+ *
  * Supported address types: P2PKH, P2WKH, NP2WKH, P2TR.
- * 
+ *
  * @param msg - The message to sign
  * @param addr - The on-chain address to sign with
  * @throws Error if the address isn't owned by the wallet or signing fails
@@ -526,8 +526,10 @@ export const signMessageWithAddr = async (
     addr: string
 ): Promise<walletrpc.SignMessageWithAddrResponse> => {
     try {
-        console.log(`lndmobile/wallet.ts: signMessageWithAddr called with address: ${addr}`);
-        
+        console.log(
+            `lndmobile/wallet.ts: signMessageWithAddr called with address: ${addr}`
+        );
+
         const response = await sendCommand<
             walletrpc.ISignMessageWithAddrRequest,
             walletrpc.SignMessageWithAddrRequest,
@@ -541,7 +543,7 @@ export const signMessageWithAddr = async (
                 addr
             }
         });
-        
+
         return response;
     } catch (error) {
         console.error('Error in signMessageWithAddr:', error);
@@ -551,13 +553,13 @@ export const signMessageWithAddr = async (
 
 /**
  * Verify a message signature with an on-chain address.
- * 
+ *
  * This method returns the validity and the recovered public key of the provided
- * compact signature (base64 encoded). The verification checks that the signature 
+ * compact signature (base64 encoded). The verification checks that the signature
  * is valid and that the recovered public key matches the provided address.
- * 
+ *
  * Supported address types: P2PKH, P2WKH, NP2WKH, P2TR.
- * 
+ *
  * @param msg - The message that was signed
  * @param signature - The signature to verify (base64 encoded)
  * @param addr - The address to verify against
@@ -574,22 +576,26 @@ export const verifyMessageWithAddr = async (
         if (!addr || addr.trim() === '') {
             throw new Error('Address is required for on-chain verification');
         }
-        
+
         if (!signature || signature.trim() === '') {
             throw new Error('Signature is required for verification');
         }
-        
+
         if (!msg || msg.length === 0) {
-            console.error('[lndmobile/wallet.ts] verifyMessageWithAddr: Error - message is empty');
+            console.error(
+                '[lndmobile/wallet.ts] verifyMessageWithAddr: Error - message is empty'
+            );
             throw new Error('Message is required for verification');
         }
 
         const msgBase64 = Base64Utils.bytesToBase64(msg);
-        console.log(`[lndmobile/wallet.ts] verifyMessageWithAddr: base64 encoded message length: ${msgBase64.length}`);
-        
+        console.log(
+            `[lndmobile/wallet.ts] verifyMessageWithAddr: base64 encoded message length: ${msgBase64.length}`
+        );
+
         // Enhanced signature debugging
         let signatureToUse = signature;
-        
+
         const response = await sendCommand<
             walletrpc.IVerifyMessageWithAddrRequest,
             walletrpc.VerifyMessageWithAddrRequest,
@@ -604,10 +610,13 @@ export const verifyMessageWithAddr = async (
                 addr
             }
         });
-        
+
         return response;
     } catch (error) {
-        console.error(`[lndmobile/wallet.ts] Error in verifyMessageWithAddr:`, error);
+        console.error(
+            `[lndmobile/wallet.ts] Error in verifyMessageWithAddr:`,
+            error
+        );
         throw error;
     }
 };

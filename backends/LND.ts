@@ -611,6 +611,70 @@ export default class LND {
             msg: Base64Utils.utf8ToBase64(data.msg),
             signature: data.signature
         });
+    supportsAddressMessageSigning = () => true;
+    signMessageWithAddr = async (message: string, address: string) => {
+        try {
+            const payload = {
+                msg: Base64Utils.utf8ToBase64(message),
+                addr: address
+            };
+            const result = await this.postRequest(
+                '/v2/wallet/address/signmessage',
+                payload
+            );
+
+            return {
+                signature: result.signature,
+                error: undefined
+            };
+        } catch (apiError) {
+            console.error('Error with address-specific signing:', apiError);
+            return {
+                signature: undefined,
+                error: apiError,
+                info: "Note: This signature is from your node's private key, not specifically from the selected address."
+            };
+        }
+    };
+    verifyMessageWithAddr = async (
+        message: string,
+        signature: string,
+        address: string
+    ) => {
+        try {
+            try {
+                const payload = {
+                    msg: Base64Utils.utf8ToBase64(message),
+                    signature: signature,
+                    addr: address
+                };
+
+                const result = await this.postRequest(
+                    '/v2/wallet/address/verifymessage',
+                    payload
+                );
+
+                return {
+                    valid: result.valid,
+                    pubkey: result.pubkey,
+                    error: undefined,
+                    info: 'Note: This verification is against the provided address.'
+                };
+            } catch (apiError) {
+                console.error(
+                    'Error with address-specific verification:',
+                    apiError
+                );
+            }
+        } catch (error) {
+            console.error('Error in verifyMessageWithAddr:', error);
+            return {
+                valid: false,
+                pubkey: undefined,
+                error: error
+            };
+        }
+    };
     lnurlAuth = async (r_hash: string) => {
         const signed = await this.signMessage(r_hash);
         return {

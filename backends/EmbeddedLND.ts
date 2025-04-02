@@ -61,9 +61,9 @@ const {
     sendCoins
 } = lndMobile.onchain;
 
-import { 
+import {
     signMessageWithAddr as signMsgWithAddr,
-    verifyMessageWithAddr as verifyMsgWithAddr 
+    verifyMessageWithAddr as verifyMsgWithAddr
 } from '../lndmobile/wallet';
 
 export default class EmbeddedLND extends LND {
@@ -241,18 +241,25 @@ export default class EmbeddedLND extends LND {
     // setFees = () => N/A;
 
     signMessageWithAddr = async (message: string, address: string) => {
-        
         try {
             const addressList = await this.listAddresses();
-            
+
             // The ListAddressesResponse has account_with_addresses, not addresses
             // Extract all addresses from all accounts
             let addressFound = false;
-            
-            if (addressList && addressList.account_with_addresses && Array.isArray(addressList.account_with_addresses)) {
+
+            if (
+                addressList &&
+                addressList.account_with_addresses &&
+                Array.isArray(addressList.account_with_addresses)
+            ) {
                 // Check all accounts and their addresses
                 for (const account of addressList.account_with_addresses) {
-                    if (account && account.addresses && Array.isArray(account.addresses)) {
+                    if (
+                        account &&
+                        account.addresses &&
+                        Array.isArray(account.addresses)
+                    ) {
                         // Check if any address in this account matches
                         for (const addr of account.addresses) {
                             if (addr && addr.address === address) {
@@ -264,18 +271,20 @@ export default class EmbeddedLND extends LND {
                     }
                 }
             }
-            
+
             if (!addressFound) {
-                throw new Error(`Address ${address} does not belong to this wallet. Only addresses owned by this wallet can be used for signing.`);
+                throw new Error(
+                    `Address ${address} does not belong to this wallet. Only addresses owned by this wallet can be used for signing.`
+                );
             }
-            
+
             // Convert string message to Uint8Array
             const encoder = new TextEncoder();
             const messageBytes = encoder.encode(message);
-            
+
             // Call the imported function directly
             const response = await signMsgWithAddr(messageBytes, address);
-            
+
             return {
                 signature: response.signature,
                 error: undefined
@@ -284,33 +293,44 @@ export default class EmbeddedLND extends LND {
             console.error('Error in signMessageWithAddr:', error);
             return {
                 signature: undefined,
-                error: error?.message || "Failed to sign message with address.",
-                info: "There was an error signing the message with the provided address."
+                error: error?.message || 'Failed to sign message with address.',
+                info: 'There was an error signing the message with the provided address.'
             };
         }
     };
 
-    verifyMessageWithAddr = async (message: string, signature: string, address: string) => {
+    verifyMessageWithAddr = async (
+        message: string,
+        signature: string,
+        address: string
+    ) => {
         try {
             // Convert string message to Uint8Array
             const encoder = new TextEncoder();
             const messageBytes = encoder.encode(message);
-            
+
             // Call the imported function directly
-            const response = await verifyMsgWithAddr(messageBytes, signature, address);
-            
+            const response = await verifyMsgWithAddr(
+                messageBytes,
+                signature,
+                address
+            );
+
             return {
                 valid: response.valid,
                 pubkey: Buffer.from(response.pubkey).toString('hex'),
-                error: undefined
+                error: undefined,
+                info: 'Verified with the embedded LND implementation.'
             };
         } catch (error: any) {
             console.error('Error in verifyMessageWithAddr:', error);
             return {
                 valid: false,
                 pubkey: undefined,
-                error: error?.message || "Failed to verify message signature with address.",
-                info: "There was an error verifying the message signature with the provided address."
+                error:
+                    error?.message ||
+                    'Failed to verify message signature with address.',
+                info: 'There was an error verifying the message signature with the provided address.'
             };
         }
     };

@@ -4,7 +4,7 @@ import BackendUtils from './../utils/BackendUtils';
 interface VerificationRequest {
     msg: string;
     signature: string;
-    addr?: string;  // Optional address for on-chain verification
+    addr?: string; // Optional address for on-chain verification
 }
 
 export default class MessageSignStore {
@@ -16,7 +16,12 @@ export default class MessageSignStore {
     @observable public valid: boolean | null;
     @observable public signingMode: 'lightning' | 'onchain' = 'lightning';
     @observable public selectedAddress: string = '';
-    @observable public addresses: { address: string; type: string; accountName?: string; addressType?: string }[] = [];
+    @observable public addresses: {
+        address: string;
+        type: string;
+        accountName?: string;
+        addressType?: string;
+    }[] = [];
 
     @action
     public reset() {
@@ -41,16 +46,20 @@ export default class MessageSignStore {
     public loadAddresses = () => {
         this.loading = true;
         console.log('Loading on-chain addresses...');
-        
+
+        const previouslySelectedAddress = this.selectedAddress;
+
         BackendUtils.listAddresses()
             .then((data: any) => {
                 console.log('Address data received:', data);
-                
+
                 // Handle response format from UTXOsStore
                 if (data && data.account_with_addresses) {
                     // Format from UTXOsStore - has account_with_addresses array
-                    console.log(`Found ${data.account_with_addresses.length} accounts with addresses`);
-                    
+                    console.log(
+                        `Found ${data.account_with_addresses.length} accounts with addresses`
+                    );
+
                     // Flatten all addresses from all accounts
                     const allAddresses: any[] = [];
                     data.account_with_addresses.forEach((account: any) => {
@@ -65,12 +74,16 @@ export default class MessageSignStore {
                             });
                         }
                     });
-                    
-                    console.log(`Extracted ${allAddresses.length} total addresses`);
+
+                    console.log(
+                        `Extracted ${allAddresses.length} total addresses`
+                    );
                     this.addresses = allAddresses;
                 } else if (data && data.addresses) {
                     // Format directly with addresses array (current format)
-                    console.log(`Found ${data.addresses.length} on-chain addresses`);
+                    console.log(
+                        `Found ${data.addresses.length} on-chain addresses`
+                    );
                     this.addresses = data.addresses.map((addr: any) => ({
                         address: addr.address,
                         type: addr.type || this.getAddressType(addr.address)
@@ -80,9 +93,22 @@ export default class MessageSignStore {
                     this.addresses = [];
                     this.error = true;
                 }
-                
-                // Select the first address by default if available
-                if (this.addresses.length > 0) {
+
+                // Check if the previously selected address is still in the list
+                const addressStillExists =
+                    previouslySelectedAddress &&
+                    this.addresses.some(
+                        (addr) => addr.address === previouslySelectedAddress
+                    );
+
+                if (addressStillExists) {
+                    // Keep the previously selected address
+                    console.log(
+                        `Keeping previously selected address: ${previouslySelectedAddress}`
+                    );
+                    this.selectedAddress = previouslySelectedAddress;
+                } else if (this.addresses.length > 0) {
+                    // Only set to first address if there was no previous selection or it no longer exists
                     this.selectedAddress = this.addresses[0].address;
                     console.log(`Selected address: ${this.selectedAddress}`);
                 } else {
@@ -107,9 +133,13 @@ export default class MessageSignStore {
         if (address.startsWith('tb1q')) return 'P2WPKH (Testnet Segwit)';
         if (address.startsWith('tb1p')) return 'P2TR (Testnet Taproot)';
         if (address.startsWith('2')) return 'NP2WKH (Testnet Nested Segwit)';
-        if (address.startsWith('m') || address.startsWith('n')) return 'P2PKH (Testnet Legacy)';
+        if (address.startsWith('m') || address.startsWith('n'))
+            return 'P2PKH (Testnet Legacy)';
+        // Add regtest address patterns
+        if (address.startsWith('bcrt1q')) return 'P2WPKH (Regtest Segwit)';
+        if (address.startsWith('bcrt1p')) return 'P2TR (Regtest Taproot)';
         return 'Unknown';
-    }
+    };
 
     @action
     public signMessage = (text: string) => {
@@ -119,26 +149,46 @@ export default class MessageSignStore {
             text = '';
         }
 
-        const signOperation = this.signingMode === 'lightning' 
-            ? BackendUtils.signMessage(text)
-            : BackendUtils.signMessageWithAddr(text, this.selectedAddress);
+        try {
+            const signOperation =
+                this.signingMode === 'lightning'
+                    ? BackendUtils.signMessage(text)
+                    : BackendUtils.signMessageWithAddr(
+                          text,
+                          this.selectedAddress
+                      );
 
-        signOperation
-            .then((data: any) => {
-                if (data) {
-                    this.signature = data.zbase || data.signature;
-                    this.error = false;
-                } else {
-                    throw new Error('No data received from sign operation');
-                }
-            })
-            .catch((error: any) => {
-                this.error = error.toString();
-                this.reset();
-            })
-            .finally(() => {
+            // Check if signOperation is a valid Promise
+            if (signOperation && typeof signOperation.then === 'function') {
+                signOperation
+                    .then((data: any) => {
+                        if (data) {
+                            this.signature = data.zbase || data.signature;
+                            this.error = false;
+                        } else {
+                            throw new Error(
+                                'No data received from sign operation'
+                            );
+                        }
+                    })
+                    .catch((error: any) => {
+                        console.error('Error in sign operation:', error);
+                        this.error = error.toString();
+                        this.reset();
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
+            } else {
+                console.error('Sign operation did not return a valid Promise');
+                this.error = 'Sign operation not supported by this backend';
                 this.loading = false;
-            });
+            }
+        } catch (error: any) {
+            console.error('Exception in signMessage:', error);
+            this.error = error.toString();
+            this.loading = false;
+        }
     };
 
     @action
@@ -146,29 +196,60 @@ export default class MessageSignStore {
         this.loading = true;
 
         // Extra validation for onchain verification
-        if (this.signingMode === 'onchain' && (!data.addr || data.addr.trim() === '')) {
+        if (
+            this.signingMode === 'onchain' &&
+            (!data.addr || data.addr.trim() === '')
+        ) {
             this.error = 'No address provided for on-chain verification';
             this.loading = false;
             return;
         }
 
-        const verifyOperation = this.signingMode === 'lightning'
-            ? BackendUtils.verifyMessage({ msg: data.msg, signature: data.signature })
-            : BackendUtils.verifyMessageWithAddr(data.msg, data.signature, data.addr);
-        
-        console.log('[MessageSignStore] Calling backend with signingMode:', this.signingMode);
-        
-        verifyOperation
-            .then((result: any) => {
-                this.valid = result.valid || result.verified || false;
-                this.pubkey = result.pubkey || result.publicKey;
-                this.error = false;
-            })
-            .catch((error: any) => {
-                this.error = error.toString();
-            })
-            .finally(() => {
+        try {
+            const verifyOperation =
+                this.signingMode === 'lightning'
+                    ? BackendUtils.verifyMessage({
+                          msg: data.msg,
+                          signature: data.signature
+                      })
+                    : BackendUtils.verifyMessageWithAddr(
+                          data.msg,
+                          data.signature,
+                          data.addr || ''
+                      );
+
+            console.log(
+                '[MessageSignStore] Calling backend with signingMode:',
+                this.signingMode
+            );
+
+            // Check if verifyOperation is a valid Promise
+            if (verifyOperation && typeof verifyOperation.then === 'function') {
+                verifyOperation
+                    .then((result: any) => {
+                        this.valid = result.valid || result.verified || false;
+                        this.pubkey = result.pubkey || result.publicKey;
+                        this.error = false;
+                    })
+                    .catch((error: any) => {
+                        console.error('Error in verify operation:', error);
+                        this.error = error.toString();
+                    })
+                    .finally(() => {
+                        this.loading = false;
+                    });
+            } else {
+                console.error(
+                    'Verify operation did not return a valid Promise'
+                );
+                this.error =
+                    'Verification operation not supported by this backend';
                 this.loading = false;
-            });
+            }
+        } catch (error: any) {
+            console.error('Exception in verifyMessage:', error);
+            this.error = error.toString();
+            this.loading = false;
+        }
     };
 }
