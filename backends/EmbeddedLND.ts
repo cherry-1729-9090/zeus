@@ -9,6 +9,8 @@ import {
     LndMobileEventEmitter
 } from '../utils/LndMobileUtils';
 
+import { TextEncoder } from 'util';
+
 const {
     addInvoice,
     getInfo,
@@ -391,6 +393,7 @@ export default class EmbeddedLND extends LND {
     //     await channelAcceptor(callback);
 
     supportsMessageSigning = () => true;
+    supportsAddressMessageSigning = () => true;
     supportsLnurlAuth = () => true;
     supportsOnchainSends = () => true;
     supportsOnchainReceiving = () => true;

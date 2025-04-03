@@ -506,6 +506,54 @@ export default class LightningNodeConnect {
                 signature: req.signature
             })
             .then((data: lnrpc.VerifyMessageResponse) => snakeize(data));
+
+    signMessageWithAddr = async (msg: string, addr: string) => {
+        const payload = {
+            msg:
+                typeof msg === 'string'
+                    ? Base64Utils.utf8ToBase64(msg)
+                    : Base64Utils.bytesToBase64(msg as Uint8Array),
+            addr
+        };
+        try {
+            const result = await this.lnc.lnd.walletKit
+                .signMessageWithAddr(payload)
+                .then((data: walletrpc.SignMessageWithAddrResponse) =>
+                    snakeize(data)
+                );
+
+            return result;
+        } catch (error) {
+            console.log('Signing failed with error:', error);
+            throw error;
+        }
+    };
+
+    verifyMessageWithAddr = async (
+        msg: string,
+        signature: string,
+        addr: string
+    ) => {
+        const payload = {
+            msg:
+                typeof msg === 'string'
+                    ? Base64Utils.utf8ToBase64(msg)
+                    : Base64Utils.bytesToBase64(msg as Uint8Array),
+            signature,
+            addr
+        };
+
+        try {
+            const result = await this.lnc.lnd.walletKit
+                .verifyMessageWithAddr(payload)
+                .then((data: walletrpc.VerifyMessageWithAddrResponse) =>
+                    snakeize(data)
+                );
+            return result;
+        } catch (error) {
+            throw error;
+        }
+    };
     lnurlAuth = async (r_hash: string) => {
         const signed = await this.signMessage(r_hash);
         return {
@@ -532,6 +580,7 @@ export default class LightningNodeConnect {
     };
 
     supportsMessageSigning = () => this.permSignMessage;
+    supportsAddressMessageSigning = () => true;
     supportsLnurlAuth = () => true;
     supportsOnchainSends = () => this.permSendCoins;
     supportsOnchainReceiving = () => this.permNewAddress;

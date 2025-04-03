@@ -645,7 +645,7 @@ export default class LND {
             try {
                 const payload = {
                     msg: Base64Utils.utf8ToBase64(message),
-                    signature: signature,
+                    signature,
                     addr: address
                 };
 
@@ -671,7 +671,7 @@ export default class LND {
             return {
                 valid: false,
                 pubkey: undefined,
-                error: error
+                error
             };
         }
     };

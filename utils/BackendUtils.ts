@@ -176,6 +176,8 @@ class BackendUtils {
         this.call('supportsAddressesWithDerivationPaths');
     isLNDBased = () => this.call('isLNDBased');
     supportInboundFees = () => this.call('supportInboundFees');
+    supportsAddressMessageSigning = () =>
+        this.call('supportsAddressMessageSigning');
     supportsDevTools = () => {
         return this.isLNDBased() || this.call('supportsDevTools');
     };
