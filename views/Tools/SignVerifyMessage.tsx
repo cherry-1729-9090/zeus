@@ -293,7 +293,16 @@ export default class SignVerifyMessage extends React.Component<
                         </Text>
 
                         {addresses.length === 0 && (
-                            <View style={styles.infoBox}>
+                            <View
+                                style={[
+                                    styles.infoBox,
+                                    {
+                                        backgroundColor:
+                                            themeColor('secondary'),
+                                        borderColor: themeColor('secondary')
+                                    }
+                                ]}
+                            >
                                 <Text style={{ color: themeColor('text') }}>
                                     Loading addresses...
                                 </Text>
@@ -345,7 +354,16 @@ export default class SignVerifyMessage extends React.Component<
                                     }}
                                 />
 
-                                <View style={styles.addressInfoBox}>
+                                <View
+                                    style={[
+                                        styles.addressInfoBox,
+                                        {
+                                            backgroundColor:
+                                                themeColor('secondary'),
+                                            borderColor: themeColor('secondary')
+                                        }
+                                    ]}
+                                >
                                     <Text
                                         style={{
                                             color: themeColor('secondaryText'),
@@ -473,7 +491,17 @@ export default class SignVerifyMessage extends React.Component<
                                 </View>
                             </View>
                         ) : (
-                            <View style={styles.errorBox}>
+                            <View
+                                style={[
+                                    styles.errorBox,
+                                    {
+                                        backgroundColor:
+                                            themeColor('errorBackground'),
+                                        borderColor:
+                                            themeColor('errorBackground')
+                                    }
+                                ]}
+                            >
                                 <Text style={{ color: themeColor('error') }}>
                                     No on-chain addresses available. Please
                                     ensure your node supports address
@@ -647,7 +675,9 @@ export default class SignVerifyMessage extends React.Component<
                                         <Text
                                             style={{
                                                 ...styles.textInput,
-                                                color: themeColor('text')
+                                                color: themeColor('text'),
+                                                borderColor:
+                                                    themeColor('secondary')
                                             }}
                                         >
                                             {signature}
@@ -812,9 +842,19 @@ export default class SignVerifyMessage extends React.Component<
                                                     />
 
                                                     <View
-                                                        style={
-                                                            styles.addressInfoBox
-                                                        }
+                                                        style={[
+                                                            styles.addressInfoBox,
+                                                            {
+                                                                backgroundColor:
+                                                                    themeColor(
+                                                                        'secondary'
+                                                                    ),
+                                                                borderColor:
+                                                                    themeColor(
+                                                                        'secondary'
+                                                                    )
+                                                            }
+                                                        ]}
                                                     >
                                                         <Text
                                                             style={{
@@ -889,7 +929,21 @@ export default class SignVerifyMessage extends React.Component<
                                                     </View>
                                                 </View>
                                             ) : (
-                                                <View style={styles.errorBox}>
+                                                <View
+                                                    style={[
+                                                        styles.errorBox,
+                                                        {
+                                                            backgroundColor:
+                                                                themeColor(
+                                                                    'errorBackground'
+                                                                ),
+                                                            borderColor:
+                                                                themeColor(
+                                                                    'errorBackground'
+                                                                )
+                                                        }
+                                                    ]}
+                                                >
                                                     <Text
                                                         style={{
                                                             color: themeColor(
@@ -1104,7 +1158,6 @@ const styles = StyleSheet.create({
         marginTop: 5,
         borderWidth: 1,
         borderRadius: 6,
-        borderColor: themeColor('secondary'),
         padding: 10,
         minHeight: 100,
         fontFamily: 'PPNeueMontreal-Book'
@@ -1118,24 +1171,18 @@ const styles = StyleSheet.create({
     },
     infoBox: {
         padding: 10,
-        backgroundColor: themeColor('secondary'),
         borderRadius: 6,
-        borderColor: themeColor('secondary'),
         borderWidth: 1
     },
     addressInfoBox: {
         padding: 10,
-        backgroundColor: themeColor('secondary'),
         borderRadius: 6,
-        borderColor: themeColor('secondary'),
         borderWidth: 1,
         marginTop: 10
     },
     errorBox: {
         padding: 10,
-        backgroundColor: themeColor('errorBackground'),
         borderRadius: 6,
-        borderColor: themeColor('errorBackground'),
         borderWidth: 1,
         marginTop: 10
     }
