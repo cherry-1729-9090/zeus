@@ -46,6 +46,7 @@
     "general.sats": "sats",
     "general.blocks": "blocks",
     "general.search": "Search",
+    "general.noSearchResults": "No search results found",
     "general.help": "Help",
     "general.about": "About",
     "general.unified": "Unified",
@@ -1403,5 +1404,9 @@
     "views.OnChainAddresses.createAddress": "Create address",
     "views.OnChainAddresses.changeAddresses": "Change addresses",
     "androidNotification.lndRunningBackground": "LND is running in the background",
-    "androidNotification.shutdown": "Shutdown"
+    "androidNotification.shutdown": "Shutdown",
+    "views.AddressPicker.sortBy.alphabeticalAscending": "Address (A to Z)",
+    "views.AddressPicker.sortBy.alphabeticalDescending": "Address (Z to A)",
+    "views.AddressPicker.sortBy.balanceAscending": "Balance (Low to High)",
+    "views.AddressPicker.sortBy.balanceDescending": "Balance (High to Low)"
 }

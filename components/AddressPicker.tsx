@@ -1,5 +1,12 @@
 import * as React from 'react';
-import { FlatList, StyleSheet, View, Text } from 'react-native';
+import {
+    FlatList,
+    StyleSheet,
+    View,
+    Text,
+    TouchableHighlight,
+    TextInput
+} from 'react-native';
 import { ListItem } from 'react-native-elements';
 import { inject, observer } from 'mobx-react';
 import { chain } from 'lodash';
@@ -9,6 +16,8 @@ import Button from './Button';
 import Header from './Header';
 import LoadingIndicator from './LoadingIndicator';
 import Screen from './Screen';
+import DropdownSetting from './DropdownSetting';
+import { Body } from './text/Body';
 
 import { localeString } from '../utils/LocaleUtils';
 import { themeColor } from '../utils/ThemeUtils';
@@ -29,6 +38,17 @@ interface AddressPickerProps {
 interface AddressPickerState {
     selectedAddress: string;
     collapsedGroups: Record<string, boolean>;
+    searchText: string;
+    hideZeroBalance: boolean;
+    hideChangeAddresses: boolean;
+    sortBy: SortBy;
+}
+
+enum SortBy {
+    alphabeticalAscending = 'alphabeticalAscending',
+    alphabeticalDescending = 'alphabeticalDescending',
+    balanceAscending = 'balanceAscending',
+    balanceDescending = 'balanceDescending'
 }
 
 interface Address {
@@ -55,7 +75,11 @@ export default class AddressPicker extends React.Component<
 > {
     state = {
         selectedAddress: this.props.selectedAddress || '',
-        collapsedGroups: {} as Record<string, boolean>
+        collapsedGroups: {} as Record<string, boolean>,
+        searchText: '',
+        hideZeroBalance: false,
+        hideChangeAddresses: false,
+        sortBy: SortBy.balanceDescending
     };
 
     componentDidMount() {
@@ -254,12 +278,58 @@ export default class AddressPicker extends React.Component<
     render() {
         const { MessageSignStore, navigation } = this.props;
         const { addresses, loading } = MessageSignStore;
-        const { selectedAddress } = this.state;
+        const {
+            selectedAddress,
+            searchText,
+            hideZeroBalance,
+            hideChangeAddresses,
+            sortBy
+        } = this.state;
 
         let addressGroups: AddressGroup[] = [];
 
         if (addresses && addresses.length > 0) {
-            const groupedAddresses = chain(addresses)
+            let sortedAddresses = [...addresses];
+
+            switch (sortBy) {
+                case SortBy.alphabeticalAscending:
+                    sortedAddresses.sort((a, b) =>
+                        a.address.localeCompare(b.address)
+                    );
+                    break;
+                case SortBy.alphabeticalDescending:
+                    sortedAddresses.sort((a, b) =>
+                        b.address.localeCompare(a.address)
+                    );
+                    break;
+                case SortBy.balanceAscending:
+                    sortedAddresses.sort(
+                        (a: any, b: any) =>
+                            Number(a.balance || 0) - Number(b.balance || 0)
+                    );
+                    break;
+                case SortBy.balanceDescending:
+                    sortedAddresses.sort(
+                        (a: any, b: any) =>
+                            Number(b.balance || 0) - Number(a.balance || 0)
+                    );
+                    break;
+            }
+
+            if (searchText) {
+                sortedAddresses = sortedAddresses.filter(
+                    (addr) =>
+                        addr.address
+                            .toLowerCase()
+                            .includes(searchText.toLowerCase()) ||
+                        (addr.accountName &&
+                            addr.accountName
+                                .toLowerCase()
+                                .includes(searchText.toLowerCase()))
+                );
+            }
+
+            const groupedAddresses = chain(sortedAddresses)
                 .groupBy(function (addr: Address) {
                     const accountName =
                         addr.accountName ||
@@ -289,7 +359,119 @@ export default class AddressPicker extends React.Component<
                     };
                 }
             );
+
+            // Apply zero balance filter
+            if (hideZeroBalance) {
+                addressGroups.forEach(
+                    (acc) =>
+                        (acc.addresses = acc.addresses.filter(
+                            (addr: any) =>
+                                addr.balance && Number(addr.balance) > 0
+                        ))
+                );
+                // Remove empty groups after filtering
+                addressGroups = addressGroups.filter(
+                    (group) => group.addresses.length > 0
+                );
+            }
+
+            // Apply change addresses filter
+            if (hideChangeAddresses) {
+                addressGroups = addressGroups.filter((a) => !a.changeAddresses);
+            }
         }
+
+        const FilterAndSortingOptions = () => (
+            <View style={styles.filterContainer}>
+                <View style={styles.searchContainer}>
+                    <TextInput
+                        style={[
+                            styles.searchInput,
+                            {
+                                backgroundColor: themeColor('secondary'),
+                                color: themeColor('text')
+                            }
+                        ]}
+                        placeholder={localeString('general.search')}
+                        placeholderTextColor={themeColor('secondaryText')}
+                        value={searchText}
+                        onChangeText={(text) =>
+                            this.setState({ searchText: text })
+                        }
+                        underlineColorAndroid="transparent"
+                    />
+                </View>
+
+                <DropdownSetting
+                    title={localeString('general.sorting')}
+                    values={Object.keys(SortBy).map((s) => ({
+                        key: s,
+                        translateKey: `views.AddressPicker.sortBy.${s}`,
+                        value: s
+                    }))}
+                    selectedValue={sortBy}
+                    onValueChange={(value) =>
+                        this.setState({ sortBy: value as SortBy })
+                    }
+                />
+
+                <View style={styles.filterButtons}>
+                    <TouchableHighlight
+                        activeOpacity={0.7}
+                        style={[
+                            styles.filterButton,
+                            { backgroundColor: themeColor('secondary') }
+                        ]}
+                        underlayColor={themeColor('disabled')}
+                        onPress={() =>
+                            this.setState({
+                                hideZeroBalance: !hideZeroBalance
+                            })
+                        }
+                    >
+                        <View>
+                            <Body
+                                small
+                                bold
+                                color={hideZeroBalance ? 'highlight' : 'text'}
+                            >
+                                {localeString(
+                                    'views.OnChainAddresses.hideZeroBalanance'
+                                )}
+                            </Body>
+                        </View>
+                    </TouchableHighlight>
+
+                    <TouchableHighlight
+                        activeOpacity={0.7}
+                        style={[
+                            styles.filterButton,
+                            { backgroundColor: themeColor('secondary') }
+                        ]}
+                        underlayColor={themeColor('disabled')}
+                        onPress={() =>
+                            this.setState({
+                                hideChangeAddresses: !hideChangeAddresses
+                            })
+                        }
+                    >
+                        <View>
+                            <Body
+                                small
+                                bold
+                                color={
+                                    hideChangeAddresses ? 'highlight' : 'text'
+                                }
+                            >
+                                {localeString(
+                                    'views.OnChainAddresses.hideChangeAddresses'
+                                )}
+                            </Body>
+                        </View>
+                    </TouchableHighlight>
+                </View>
+            </View>
+        );
 
         return (
             <Screen>
@@ -316,6 +498,8 @@ export default class AddressPicker extends React.Component<
                         <LoadingIndicator />
                     ) : (
                         <>
+                            <FilterAndSortingOptions />
+
                             {addressGroups.length > 0 ? (
                                 <FlatList
                                     data={addressGroups}
@@ -332,9 +516,13 @@ export default class AddressPicker extends React.Component<
                                         marginTop: 20
                                     }}
                                 >
-                                    {localeString(
-                                        'views.Settings.SignMessage.noAddressesAvailable'
-                                    )}
+                                    {searchText
+                                        ? localeString(
+                                              'general.noSearchResults'
+                                          )
+                                        : localeString(
+                                              'views.Settings.SignMessage.noAddressesAvailable'
+                                          )}
                                 </Text>
                             )}
                         </>
@@ -363,5 +551,27 @@ const styles = StyleSheet.create({
     },
     text: {
         fontFamily: 'PPNeueMontreal-Book'
+    },
+    filterContainer: {
+        marginBottom: 15
+    },
+    searchContainer: {
+        marginBottom: 10
+    },
+    searchInput: {
+        height: 40,
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        fontFamily: 'PPNeueMontreal-Book'
+    },
+    filterButtons: {
+        flexDirection: 'row',
+        marginTop: 10
+    },
+    filterButton: {
+        paddingHorizontal: 15,
+        paddingVertical: 6,
+        marginHorizontal: 3,
+        borderRadius: 20
     }
 });

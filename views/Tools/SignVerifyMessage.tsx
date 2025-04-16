@@ -45,6 +45,7 @@ interface SignVerifyMessageState {
     signingMode: string;
     signingAddressLocal: string;
     supportsAddressMessageSigning: boolean;
+    loading: boolean;
 }
 
 @inject('SettingsStore', 'MessageSignStore')
@@ -64,7 +65,8 @@ export default class SignVerifyMessage extends React.Component<
         verifyingAddress: '',
         signingMode: 'lightning',
         signingAddressLocal: '',
-        supportsAddressMessageSigning: false
+        supportsAddressMessageSigning: false,
+        loading: false
     };
 
     componentDidMount = () => {
@@ -233,17 +235,28 @@ export default class SignVerifyMessage extends React.Component<
 
     updateIndex = (selectedIndex: number) => {
         // Clear all fields when switching between sign and verify tabs
-        this.setState({
+        const newState: Partial<SignVerifyMessageState> = {
             selectedIndex,
             messageToSign: '',
             messageToVerify: '',
             signatureToVerify: '',
             signingAddressLocal: '',
             verifyingAddress: ''
-        });
+        };
+
+        if (selectedIndex === 0) {
+            newState.signingMethodIndex = 0;
+            newState.signingMode = 'lightning';
+        }
+
+        this.setState(newState as SignVerifyMessageState);
 
         const { MessageSignStore } = this.props;
         MessageSignStore.reset();
+
+        if (selectedIndex === 0) {
+            MessageSignStore.setSigningMode('lightning');
+        }
     };
 
     updateSigningMethod = (signingMethodIndex: number) => {
@@ -529,10 +542,10 @@ export default class SignVerifyMessage extends React.Component<
             messageToVerify,
             signatureToVerify,
             selectedIndex,
-            signingMode
+            signingMode,
+            loading
         } = this.state;
-        const { loading, signMessage, pubkey, valid, signature } =
-            MessageSignStore;
+        const { signMessage, pubkey, valid, signature } = MessageSignStore;
 
         const { supportsAddressMessageSigning } = this.state;
         const signButton = () => (
@@ -586,6 +599,19 @@ export default class SignVerifyMessage extends React.Component<
                             fontFamily: 'PPNeueMontreal-Book'
                         }
                     }}
+                    rightComponent={
+                        loading ? (
+                            <View
+                                style={{
+                                    width: 24,
+                                    height: 24,
+                                    marginRight: 10
+                                }}
+                            >
+                                <LoadingIndicator size={24} />
+                            </View>
+                        ) : undefined
+                    }
                     navigation={navigation}
                 />
 
@@ -610,8 +636,6 @@ export default class SignVerifyMessage extends React.Component<
                             color: themeColor('secondary')
                         }}
                     />
-
-                    {loading && <LoadingIndicator />}
 
                     {selectedIndex === 0 && this.renderSigningMethodSelector()}
 
