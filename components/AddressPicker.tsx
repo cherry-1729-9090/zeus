@@ -73,6 +73,9 @@ export default class AddressPicker extends React.Component<
     AddressPickerProps,
     AddressPickerState
 > {
+    private searchInputRef = React.createRef<TextInput>();
+    private localSearchText = '';
+
     state = {
         selectedAddress: this.props.selectedAddress || '',
         collapsedGroups: {} as Record<string, boolean>,
@@ -88,6 +91,18 @@ export default class AddressPicker extends React.Component<
             MessageSignStore.loadAddresses();
         }
     }
+
+    handleSearchSubmit = () => {
+        if (this.localSearchText !== this.state.searchText) {
+            this.setState({ searchText: this.localSearchText });
+
+            if (this.searchInputRef && this.searchInputRef.current) {
+                this.searchInputRef.current.setNativeProps({
+                    text: this.localSearchText
+                });
+            }
+        }
+    };
 
     selectAddress = (address: string) => {
         const { selectedAddress } = this.state;
@@ -119,45 +134,30 @@ export default class AddressPicker extends React.Component<
             return;
         }
 
-        const {
-            returnToScreen,
-            navigationMethod = 'navigate',
-            returnParams = {}
-        } = route?.params || {};
+        const { onAddressSelected } = route?.params || {};
 
-        if (returnToScreen) {
-            navigation[navigationMethod](returnToScreen, {
-                ...returnParams,
-                selectedAddress,
-                timestamp: Date.now()
-            });
+        if (onAddressSelected && typeof onAddressSelected === 'function') {
+            try {
+                onAddressSelected(selectedAddress);
+                navigation.goBack();
+            } catch (error) {
+                console.error('Error in address selection callback:', error);
+                navigation.goBack();
+            }
         } else {
             navigation.goBack();
         }
     };
 
     handleBackPress = () => {
-        const { onBack, navigation, route } = this.props;
+        const { onBack, navigation } = this.props;
 
         if (onBack) {
             onBack();
             return;
         }
 
-        const {
-            returnToScreen,
-            navigationMethod = 'navigate',
-            returnParams = {}
-        } = route?.params || {};
-
-        if (returnToScreen) {
-            navigation[navigationMethod](returnToScreen, {
-                ...returnParams,
-                timestamp: Date.now()
-            });
-        } else {
-            navigation.goBack();
-        }
+        navigation.goBack();
     };
 
     renderAddressGroup = ({ item }: { item: AddressGroup }) => {
@@ -385,6 +385,7 @@ export default class AddressPicker extends React.Component<
             <View style={styles.filterContainer}>
                 <View style={styles.searchContainer}>
                     <TextInput
+                        ref={this.searchInputRef}
                         style={[
                             styles.searchInput,
                             {
@@ -394,11 +395,15 @@ export default class AddressPicker extends React.Component<
                         ]}
                         placeholder={localeString('general.search')}
                         placeholderTextColor={themeColor('secondaryText')}
-                        value={searchText}
-                        onChangeText={(text) =>
-                            this.setState({ searchText: text })
-                        }
+                        defaultValue={searchText}
+                        onChangeText={(text) => {
+                            this.localSearchText = text;
+                        }}
+                        onSubmitEditing={this.handleSearchSubmit}
                         underlineColorAndroid="transparent"
+                        returnKeyType="search"
+                        blurOnSubmit={false}
+                        autoCapitalize="none"
                     />
                 </View>
 

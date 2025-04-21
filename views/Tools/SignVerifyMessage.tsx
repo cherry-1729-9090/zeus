@@ -274,32 +274,38 @@ export default class SignVerifyMessage extends React.Component<
         MessageSignStore.setSelectedAddress('');
     };
 
+    setSelectedAddress = (mode: 'sign' | 'verify', address: string) => {
+        const { MessageSignStore } = this.props;
+
+        if (mode === 'sign') {
+            this.setState({
+                signingAddressLocal: address,
+                signingMethodIndex: 1
+            });
+            MessageSignStore.setSigningMode('onchain');
+            MessageSignStore.setSelectedAddress(address);
+        } else if (mode === 'verify') {
+            this.setState({
+                verifyingAddress: address,
+                signingMode: 'onchain'
+            });
+            MessageSignStore.setSigningMode('onchain');
+        }
+    };
+
     navigateToAddressPicker = (mode: 'sign' | 'verify') => {
         const { navigation } = this.props;
-        const {
-            signingAddressLocal,
-            verifyingAddress,
-            selectedIndex,
-            signingMode,
-            messageToSign,
-            messageToVerify,
-            signatureToVerify
-        } = this.state;
+        const { signingAddressLocal, verifyingAddress } = this.state;
+
+        // callback function to handle address selection
+        const handleAddressSelected = (address: string) => {
+            this.setSelectedAddress(mode, address);
+        };
 
         navigation.navigate('AddressPicker', {
             selectedAddress:
                 mode === 'sign' ? signingAddressLocal : verifyingAddress,
-            returnToScreen: 'SignVerifyMessage',
-            navigationMethod: 'navigate',
-            returnParams: {
-                mode,
-                selectedIndex,
-                preserveMode: 'onchain',
-                signingMode,
-                messageToSign,
-                messageToVerify,
-                signatureToVerify
-            }
+            onAddressSelected: handleAddressSelected
         });
     };
 
@@ -589,7 +595,7 @@ export default class SignVerifyMessage extends React.Component<
                         icon: 'arrow-back',
                         color: themeColor('text'),
                         onPress: () => {
-                            navigation.navigate('Tools');
+                            navigation.goBack();
                         }
                     }}
                     centerComponent={{
