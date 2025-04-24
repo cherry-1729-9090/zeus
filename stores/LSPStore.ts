@@ -878,4 +878,45 @@ export default class LSPStore {
                 );
             });
     }
+
+    // Keysend payment for channel extension
+    @action
+    public makeKeysendPaymentForChannelExtension = (
+        destination: string,
+        amount: number
+    ) => {
+        return new Promise((resolve, reject) => {
+            if (!destination || !amount) {
+                reject('Invalid destination or amount for keysend payment');
+                return;
+            }
+
+            // Create a custom keysend payment
+            const payload = {
+                dest: destination,
+                amt: amount.toString(),
+                payment_hash: '',
+                dest_custom_records: {},
+                fee_limit_sat: Math.max(Math.ceil(amount * 0.01), 10), // Set fee limit to 1% or minimum 10 sats
+                timeout_seconds: 60,
+                allow_self_payment: false,
+                dest_features: [9], // Feature bit for keysend (TLV onion payload)
+                is_keysend: true
+            };
+
+            BackendUtils.sendKeysend(payload)
+                .then((response: any) => {
+                    console.log('Keysend payment successful:', response);
+                    resolve(response);
+                })
+                .catch((error: any) => {
+                    console.error('Keysend payment failed:', error);
+                    runInAction(() => {
+                        this.error = true;
+                        this.error_msg = errorToUserFriendly(error);
+                    });
+                    reject(error);
+                });
+        });
+    };
 }

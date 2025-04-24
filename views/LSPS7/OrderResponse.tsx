@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { inject, observer } from 'mobx-react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, Alert } from 'react-native';
 import moment from 'moment';
 
 import Screen from '../../components/Screen';
@@ -12,20 +12,31 @@ import { localeString } from '../../utils/LocaleUtils';
 import { numberWithCommas } from '../../utils/UnitsUtils';
 
 import InvoicesStore from '../../stores/InvoicesStore';
+import LSPStore from '../../stores/LSPStore';
 
 interface LSPS7OrderResponseProps {
     navigation: any;
     orderResponse: any;
     InvoicesStore?: InvoicesStore;
+    LSPStore?: LSPStore;
     orderView: boolean;
 }
 
-@inject('InvoicesStore')
+@inject('InvoicesStore', 'LSPStore')
 @observer
 export default class LSPS7OrderResponse extends React.Component<
     LSPS7OrderResponseProps,
-    {}
+    {
+        isKeysendLoading: boolean;
+    }
 > {
+    constructor(props: LSPS7OrderResponseProps) {
+        super(props);
+        this.state = {
+            isKeysendLoading: false
+        };
+    }
+
     render() {
         const { orderResponse, InvoicesStore, orderView, navigation } =
             this.props;
@@ -351,6 +362,98 @@ export default class LSPS7OrderResponse extends React.Component<
                                                     );
                                             }}
                                         />
+
+                                        {/* Pay with Keysend button */}
+                                        {this.props.LSPStore?.isOlympus() &&
+                                            payment.bolt11?.order_total_sat && (
+                                                <Button
+                                                    title="Pay with Keysend"
+                                                    icon={
+                                                        this.state
+                                                            .isKeysendLoading
+                                                            ? undefined
+                                                            : {
+                                                                  name: 'flash-on',
+                                                                  size: 20,
+                                                                  color: 'white'
+                                                              }
+                                                    }
+                                                    containerStyle={{
+                                                        paddingVertical: 10
+                                                    }}
+                                                    onPress={() => {
+                                                        const { LSPStore } =
+                                                            this.props;
+                                                        const lspPubkey =
+                                                            LSPStore?.getLSPSPubkey();
+                                                        const amount =
+                                                            payment.bolt11
+                                                                .order_total_sat;
+
+                                                        if (
+                                                            !lspPubkey ||
+                                                            !amount
+                                                        ) {
+                                                            Alert.alert(
+                                                                'Error',
+                                                                'Cannot make keysend payment: missing pubkey or amount'
+                                                            );
+                                                            return;
+                                                        }
+
+                                                        this.setState({
+                                                            isKeysendLoading:
+                                                                true
+                                                        });
+
+                                                        LSPStore?.makeKeysendPaymentForChannelExtension(
+                                                            lspPubkey,
+                                                            amount
+                                                        )
+                                                            .then(
+                                                                (response) => {
+                                                                    console.log(
+                                                                        'Keysend payment successful:',
+                                                                        response
+                                                                    );
+                                                                    Alert.alert(
+                                                                        'Success',
+                                                                        'Channel extension payment successful! The order will be updated shortly.'
+                                                                    );
+                                                                    // Refresh the order to see updated status
+                                                                    if (
+                                                                        orderResponse?.order_id
+                                                                    ) {
+                                                                        LSPStore.lsps7GetOrderCustomMessage(
+                                                                            orderResponse.order_id,
+                                                                            lspPubkey
+                                                                        );
+                                                                    }
+                                                                }
+                                                            )
+                                                            .catch((error) => {
+                                                                console.error(
+                                                                    'Keysend payment failed:',
+                                                                    error
+                                                                );
+                                                                Alert.alert(
+                                                                    'Error',
+                                                                    `Keysend payment failed: ${error}`
+                                                                );
+                                                            })
+                                                            .finally(() => {
+                                                                this.setState({
+                                                                    isKeysendLoading:
+                                                                        false
+                                                                });
+                                                            });
+                                                    }}
+                                                    loading={
+                                                        this.state
+                                                            .isKeysendLoading
+                                                    }
+                                                />
+                                            )}
                                     </>
                                 )}
                                 {payment.onchain?.address &&

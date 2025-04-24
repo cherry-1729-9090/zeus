@@ -19,6 +19,7 @@ interface ButtonProps {
     noUppercase?: boolean;
     disabled?: boolean;
     accessibilityLabel?: string;
+    loading?: boolean;
 }
 
 function Button(props: ButtonProps) {
@@ -37,7 +38,8 @@ function Button(props: ButtonProps) {
         buttonStyle,
         noUppercase,
         disabled,
-        accessibilityLabel
+        accessibilityLabel,
+        loading
     } = props;
 
     const newContainerStyle: any = adaptiveWidth
@@ -117,6 +119,7 @@ function Button(props: ButtonProps) {
             containerStyle={newContainerStyle}
             disabled={disabled}
             accessibilityLabel={accessibilityLabel}
+            loading={loading}
         />
     );
 }
