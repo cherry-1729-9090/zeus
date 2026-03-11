@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Icon } from '@rneui/themed';
 import { inject, observer } from 'mobx-react';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import AddIcon from '../assets/images/SVG/Add.svg';
 import Bolt12Icon from '../assets/images/SVG/AtSign.svg';
@@ -55,7 +55,7 @@ import UnitsStore from '../stores/UnitsStore';
 import { version } from '../package.json';
 
 interface MenuProps {
-    navigation: StackNavigationProp<any, any>;
+    navigation: NativeStackNavigationProp<any, any>;
     CashuStore: CashuStore;
     ChannelsStore: ChannelsStore;
     NodeInfoStore: NodeInfoStore;

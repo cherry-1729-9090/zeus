@@ -2,7 +2,7 @@ import * as React from 'react';
 import { NativeModules, ScrollView, Text, View } from 'react-native';
 import { ListItem } from '@rneui/themed';
 import { inject, observer } from 'mobx-react';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Button from '../../../components/Button';
 import Header from '../../../components/Header';
@@ -21,7 +21,7 @@ import { resetMissionControl } from '../../../lndmobile';
 import LdkNode from '../../../ldknode/LdkNodeInjection';
 
 interface EmbeddedNodeTroubleshootingProps {
-    navigation: StackNavigationProp<any, any>;
+    navigation: NativeStackNavigationProp<any, any>;
     SettingsStore: SettingsStore;
 }
 
